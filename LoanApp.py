@@ -13,6 +13,7 @@ model = joblib.load('./artifacts/model_b4_ft_eng.pk1')
 
 # Create a Dash app
 app = dash.Dash(__name__)
+server = app.server
 
 # Define the layout
 app.layout = html.Div([
