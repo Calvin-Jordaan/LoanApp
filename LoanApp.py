@@ -4,11 +4,35 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import pandas as pd
 import joblib
+import numpy as np
+import plotly.express as px
 
 pd.set_option('display.max_columns', None)
 
 # Load your trained machine learning model
 model = joblib.load('./artifacts/model_b4_ft_eng.pk1')
+
+def ft_importance(model_dt):
+    # Extract features and their coefficients
+    coef = model_dt.named_steps["decisiontreeclassifier"].feature_importances_
+    ft = model_dt.named_steps['decisiontreeclassifier'].feature_names_in_
+
+    # Convert to Pandas Series
+    ft_importance = pd.Series(
+        np.exp(coef), index=ft
+        ).sort_values(ascending=True)
+    
+    #Plot ft importance
+    # Create horizontal bar chart of feature importances
+    fig = px.bar(
+        data_frame=ft_importance, 
+        x=ft_importance[:16].values, 
+        y=ft_importance[:16].index, 
+        title="Feature Importance"
+    )
+
+    fig.update_layout(xaxis_title='Gini Importance', yaxis_title='')
+    return fig
 
 # Create a Dash app
 app = dash.Dash(__name__)
@@ -16,129 +40,215 @@ server = app.server
 
 # Define the layout
 app.layout = html.Div([
+    dcc.Graph(figure=ft_importance(model)),
     html.H1("Loan Approval Prediction"),
 
-    # Gender
+    # Contains all the inputs
+    html.Div([
+        
+        # Dropdowns
+        html.Div([
 
-    dcc.Dropdown(
-        id='gender-dropdown',
-        options=[
-            {'label': 'Male', 'value': 'Male'},
-            {'label': 'Female', 'value': 'Female'}
-        ],
-        value='',
-        placeholder="Select Gender"
-    ),
+            # Gender
+            html.H3("Gender: *"),
+            dcc.Dropdown(
+                id='gender-dropdown',
+                options=[
+                    {'label': 'Male', 'value': 'Male'},
+                    {'label': 'Female', 'value': 'Female'}
+                ],
+                value='',
+                placeholder="Select Gender"
+            ),
 
-    # Married
-    dcc.Dropdown(
-        id='married-dropdown',
-        options=[
-            {'label': 'Married', 'value': 'Yes'},
-            {'label': 'Not Married', 'value': 'No'}
-        ],
-        value='',
-        placeholder="Select Marital Status"
-    ),
+            # Married
+            html.H3("Marital status: *"),
+            dcc.Dropdown(
+                id='married-dropdown',
+                options=[
+                    {'label': 'Married', 'value': 'Yes'},
+                    {'label': 'Not Married', 'value': 'No'}
+                ],
+                value='',
+                placeholder="Select Marital Status"
+            ),
 
-    # Dependents
-    dcc.Dropdown(
-        id='dependents-dropdown',
-        options=[
-            {'label': '0 Dependents', 'value': 0},
-            {'label': '1 Dependant', 'value': 1},
-            {'label': '2 Dependant', 'value': 2},
-            {'label': '+3 Dependant', 'value': 3}
-        ],
-        value='',
-        placeholder="Select Amount of dependents"
-    ),
+            # Dependents
+            html.H3("Dependants: *"),
+            dcc.Dropdown(
+                id='dependents-dropdown',
+                options=[
+                    {'label': '0 Dependents', 'value': 0},
+                    {'label': '1 Dependant', 'value': 1},
+                    {'label': '2 Dependant', 'value': 2},
+                    {'label': '+3 Dependant', 'value': 3}
+                ],
+                value='',
+                placeholder="Select Amount of dependents"
+            ),
 
-    # Education
-    dcc.Dropdown(
-        id='education-dropdown',
-        options=[
-            {'label': 'I have a degree', 'value': 'Yes'},
-            {'label': 'I do not have a degree', 'value': 'No'}
-        ],
-        value='',
-        placeholder="Indication of degree"
-    ),
-    # Self_employed
-    dcc.Dropdown(
-        id='employment-dropdown',
-        options=[
-            {'label': 'Self employed', 'value': 'Yes'},
-            {'label': 'Not self employed', 'value': 'No'}
-        ],
-        value='',
-        placeholder="Indication of self employment"
-    ),
-    # Applicant_income
-    dcc.Input(
-        id='applicantIncome-input',
-        type='number',
-        value='',
-        placeholder="Applicant Income Amount"
-    ),
-    # Coapplicant_income
-    dcc.Input(
-        id='coApplicantIncome-input',
-        type='number',
-        value='',
-        placeholder="Co-Applicant Income Amount"
-    ),
-    # Loan_amount
-    dcc.Input(
-        id='loanAmount-input',
-        type='number',
-        value='',
-        placeholder="Loan Amount"
-    ),
-    # Loan_term
-    dcc.Input(
-        id='loanTerm-input',
-        type='number',
-        value='',
-        placeholder="Loan Term"
-    ),
-    # Credit_history
-    dcc.Dropdown(
-        id='creditHistory-input',
-        options=[
-            {'label': 'I have a credit history', 'value': 1},
-            {'label': 'I do not have a credit history', 'value': 0},
-        ],
-        value='',
-        placeholder="Indication of credit history"
-    ),
-    # Property_area
-    dcc.Dropdown(
-        id='property_area-input',
-        options=[
-            {'label': 'Urban', 'value': 2},
-            {'label': 'Semiurban', 'value': 1},
-            {'label': 'Rural', 'value': 0}
-        ],
-        value='',
-        placeholder="Select Area you live in"
-    ),
+            # Education
+            html.H3("Education: *"),
+            dcc.Dropdown(
+                id='education-dropdown',
+                options=[
+                    {'label': 'I have a degree', 'value': 'Yes'},
+                    {'label': 'I do not have a degree', 'value': 'No'}
+                ],
+                value='',
+                placeholder="Indication of degree"
+            ),
+        ], style={'width': '20%'}),
 
-    # 'Gender': [gender],
-    #     'Married': [married],
-    #     'Dependents': [dependents],
-    #     'Education': [education],
-    #     'Self_Employed': [self_employed],
-    #     'ApplicantIncome': [applicant_income],
-    #     'CoapplicantIncome': [coapplicant_income],
-    #     'LoanAmount': [loan_amount],
-    #     'Loan_Amount_Term': [loan_term],
-    #     'Credit_History': [credit_history],
-    #     'Property_Area': [property_area]
-    # Add other input components for Dependents, Education, Self_Employed, etc.
-    
-    html.Button('Predict Loan Approval', id='predict-button'),
-    html.Div(id='prediction-output')
+        # Sliders
+        html.Div([
+            # Applicant_income
+            html.H3("Applicant Income:"),
+            dcc.Slider(
+                id='applicantIncome-input',
+                min=0,
+                max=11000,
+                value=0,
+                marks={
+                    0: '0',
+                    1000: '1000',
+                    2000: '2000',
+                    3000: '3000',
+                    4000: '4000',
+                    5000: '5000',
+                    6000: '6000',
+                    7000: '7000',
+                    8000: '8000',
+                    9000: '9000',
+                    10000: '10000',
+                    11000: '11000'
+                },
+                included=False
+            ),
+            # Coapplicant_income
+            html.H3("Co-applicant Income:"),
+            dcc.Slider(
+                id='coApplicantIncome-input',
+                min=0,
+                max=11000,
+                value=0,
+                marks={
+                    0: '0',
+                    1000: '1000',
+                    2000: '2000',
+                    3000: '3000',
+                    4000: '4000',
+                    5000: '5000',
+                    6000: '6000',
+                    7000: '7000',
+                    8000: '8000',
+                    9000: '9000',
+                    10000: '10000',
+                    11000: '11000'
+                },
+                included=False
+            ),
+            # LoanAmount
+            html.H3("Loan Amount:"),
+            dcc.Slider(
+                id='loanAmount-input',
+                min=0,
+                max=300,
+                value=0,
+                marks={
+                    0: '0',
+                    30: '30',
+                    60: '60',
+                    90: '90',
+                    120: '120',
+                    150: '150',
+                    180: '180',
+                    210: '210',
+                    240: '240',
+                    270: '270',
+                    300: '300'
+                },
+                included=False
+            ),
+            # Loan_term
+            html.H3("Loan Term:"),
+            dcc.Slider(
+                id='loanTerm-input',
+                min=0,
+                max=480,
+                value=0,
+                marks={
+                    0: '0',
+                    60: '60',
+                    120: '120',
+                    180: '180',
+                    240: '240',
+                    300: '300',
+                    360: '360',
+                    420: '420',
+                    480: '480'
+                },
+                included=False
+            ),
+        ], style={'width': '40%'}),
+
+        html.Div([
+            # Self_employed
+            html.H3("Employment: *"),
+            dcc.Dropdown(
+                id='employment-dropdown',
+                options=[
+                    {'label': 'Self employed', 'value': 'Yes'},
+                    {'label': 'Not self employed', 'value': 'No'}
+                ],
+                value='',
+                placeholder="Indication of self employment"
+            ),
+            # Credit_history
+            html.H3("Credit History: *"),
+            dcc.Dropdown(
+                id='creditHistory-input',
+                options=[
+                    {'label': 'I have a credit history', 'value': 1},
+                    {'label': 'I do not have a credit history', 'value': 0},
+                ],
+                value='',
+                placeholder="Indication of credit history"
+            ),
+            # Property_area
+            html.H3("Property Area: *"),
+            dcc.Dropdown(
+                id='property_area-input',
+                options=[
+                    {'label': 'Urban', 'value': 2},
+                    {'label': 'Semiurban', 'value': 1},
+                    {'label': 'Rural', 'value': 0}
+                ],
+                value='',
+                placeholder="Select Area you live in"
+            ),
+
+        ], style={'width': '20%'})
+
+    ], style={'display': 'flex', 'gap': '3vw'}),
+
+    html.Br(),
+    html.Br(),
+
+    # Contains the button and output.
+    html.Div([
+        html.Button('Predict Loan Approval', id='predict-button', style={'width': '30%', 'font-size': '2vw'}),
+
+        html.Div([
+
+            html.H5("Output: "),
+
+            html.Div(id='prediction-output')
+
+        ], style={'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'gap': '2vw'})
+
+    ], style={'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'gap': '2vw', 'margin-bottom': '2vh'})
+
 ])
 
 # Define callback to update prediction output
@@ -162,8 +272,9 @@ app.layout = html.Div([
 def update_prediction(n_clicks, gender, married, dependents, education, self_employed,
                       applicant_income, coapplicant_income, loan_amount,
                       loan_term, credit_history, property_area):
-    if n_clicks == None:
-        return ""
+
+    if n_clicks == None or gender == None or married == None or dependents == None or education == None or self_employed == None or credit_history == None or property_area == None:
+        return html.H1("Please enter the required values to get an output.")
     
     # Fix input to correct type:
     list_binary = [gender, married, education, self_employed]
@@ -237,13 +348,14 @@ def update_prediction(n_clicks, gender, married, dependents, education, self_emp
     txt_color = 'black'
 
     if prediction == 1:
-        result_text = "Congratulations! Your loan is approved."
+        result_text = "You qualify for a loan."
         txt_color = 'green'
     else:
-        result_text = "Sorry, your loan application is not approved."
+        result_text = "You do not qualify for a loan."
         txt_color = 'red'
 
-    return html.H3(result_text, style={'color': txt_color})
+    return html.H1(result_text, style={'color': txt_color})
 
+# Run app server
 if __name__ == '__main__':
     app.run_server(debug=True)
