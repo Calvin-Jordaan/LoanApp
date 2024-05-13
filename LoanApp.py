@@ -4,7 +4,6 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import pandas as pd
 import joblib
-import pickle
 
 pd.set_option('display.max_columns', None)
 
